@@ -4,9 +4,11 @@
 
 import okhttp3.*
 import kotlinx.coroutines.*
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
 import java.util.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -38,9 +40,9 @@ suspend fun getSpotifyAccessToken(): String = withContext(Dispatchers.IO) {
     }.getOrElse { throw it }
 }
 
-suspend fun fetchSpotifyData(accessToken: String, playlistId: String): String = withContext(Dispatchers.IO) {
+suspend fun searchSpotifyPlaylists(accessToken: String, year: Int): String = withContext(Dispatchers.IO) {
     val request = Request.Builder()
-        .url("https://api.spotify.com/v1/playlists/$playlistId")
+        .url("https://api.spotify.com/v1/search?q=year:$year&type=playlist&limit=1")
         .header("Authorization", "Bearer $accessToken")
         .build()
 
@@ -50,36 +52,86 @@ suspend fun fetchSpotifyData(accessToken: String, playlistId: String): String = 
     }.getOrElse { throw it }
 }
 
-suspend fun call() {
-    println("Test")
-    val plId = "3cEYpjA9oz9GiPac4AsH4n"
-    val playlistId = "37i9dQZEVXbMDoHDwVN2tF" // Spotify's "Global Top 50" playlist
-    val accessToken = getSpotifyAccessToken()
-    val spotifyData = fetchSpotifyData(accessToken, plId)
+suspend fun fetchPlaylistTracks(accessToken: String, playlistId: String): String = withContext(Dispatchers.IO) {
+    val request = Request.Builder()
+        .url("https://api.spotify.com/v1/playlists/$playlistId/tracks?limit=10")
+        .header("Authorization", "Bearer $accessToken")
+        .build()
 
-    val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-    println("Spotify data fetched at $timestamp:")
-    //println(spotifyData)
-    val fileName = "spotify_data_$timestamp.json"
-    sendDataToServer(spotifyData, fileName)
+    kotlin.runCatching {
+        val response = client.newCall(request).execute()
+        response.body?.string() ?: throw IllegalStateException("Failed to fetch playlist tracks")
+    }.getOrElse { throw it }
 }
 
-fun main() {
-    runBlocking {
-        call()
+suspend fun getTopSongsForYear(accessToken: String, year: Int): List<Triple<String, String, String>> {
+    println("Fetching data for year $year")
+    val searchResult = searchSpotifyPlaylists(accessToken, year)
+    val searchJson = Json.parseToJsonElement(searchResult).jsonObject
+    val playlistId = searchJson["playlists"]?.jsonObject?.get("items")?.jsonArray?.getOrNull(0)?.jsonObject?.get("id")?.jsonPrimitive?.content
+        ?: throw IllegalStateException("No playlist found for year $year")
+
+    val tracksResult = fetchPlaylistTracks(accessToken, playlistId)
+    val tracksJson = Json.parseToJsonElement(tracksResult).jsonObject
+    return tracksJson["items"]?.jsonArray?.take(10)?.mapNotNull { item ->
+        println("Devesh $item")
+        val track = item.jsonObject["track"]?.jsonObject
+        val name = track?.get("name")?.jsonPrimitive?.content
+        val duration = track?.get("duration_ms")?.jsonPrimitive?.content
+        val artists = track?.get("artists")?.jsonArray?.mapNotNull { it.jsonObject["name"]?.jsonPrimitive?.content }
+        if (name != null && artists != null && duration != null) {
+            Triple(name,  artists.joinToString(", "), duration)
+        } else null
+    } ?: emptyList()
+}
+
+suspend fun getAllYearsTopSongs() {
+    val accessToken = getSpotifyAccessToken()
+    val allYearsData = mutableMapOf<Int, List<Triple<String, String, String>>>()
+
+    for (year in 2014 downTo 1961) {
+        try {
+            val topSongs = getTopSongsForYear(accessToken, year)
+            allYearsData[year] = topSongs
+
+            val yearData = buildJsonObject {
+                put(year.toString(), buildJsonArray {
+                    topSongs.forEach { (name, artists, duration) ->
+                        add(buildJsonObject {
+                            put("name", name)
+                            put("artists", artists)
+                            put("duration", duration)
+                        })
+                    }
+                })
+            }
+
+            val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+            val fileName = "top_songs_${year}_$timestamp.json"
+            sendDataToServer(yearData.toString(), fileName)
+        }catch(e: Exception){
+            println("Error sending the data for year: $year")
+        }
+
+        if (year < 2023) {
+            println("Waiting 5 seconds before fetching next year's data...")
+            delay(5000) // Wait for 5 seconds
+        }
     }
 }
 
 suspend fun sendDataToServer(data: String, fileName: String) = withContext(Dispatchers.IO) {
+    val localFile = File(fileName)
+    localFile.writeText(data)
+    println("File saved locally at : ${localFile.absolutePath}")
     val json = """
         {
             "file": "$fileName",
-            "content": $data
+            "content": ${Json.encodeToString(JsonPrimitive(data))}
         }
     """.trimIndent()
 
-
-    println(json)
+    println("Sending data to server: $json")
 
     val requestBody = json.toRequestBody("application/json".toMediaType())
 
@@ -102,5 +154,10 @@ suspend fun sendDataToServer(data: String, fileName: String) = withContext(Dispa
     }
 }
 
-main()
+fun main() {
+    runBlocking {
+        getAllYearsTopSongs()
+    }
+}
 
+main()
