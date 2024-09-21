@@ -73,7 +73,7 @@ suspend fun getTopSongsForYear(accessToken: String, year: Int): List<Triple<Stri
 
     val tracksResult = fetchPlaylistTracks(accessToken, playlistId)
     val tracksJson = Json.parseToJsonElement(tracksResult).jsonObject
-    return tracksJson["items"]?.jsonArray?.take(10)?.mapNotNull { item ->
+    return tracksJson["items"]?.jsonArray?.take(20)?.mapNotNull { item ->
         println("Devesh $item")
         val track = item.jsonObject["track"]?.jsonObject
         val name = track?.get("name")?.jsonPrimitive?.content
@@ -89,33 +89,35 @@ suspend fun getAllYearsTopSongs() {
     val accessToken = getSpotifyAccessToken()
     val allYearsData = mutableMapOf<Int, List<Triple<String, String, String>>>()
 
-    for (year in 2014 downTo 1961) {
-        try {
-            val topSongs = getTopSongsForYear(accessToken, year)
-            allYearsData[year] = topSongs
+    while (true){
+        for (year in 2014 downTo 1961) {
+            try {
+                val topSongs = getTopSongsForYear(accessToken, year)
+                allYearsData[year] = topSongs
 
-            val yearData = buildJsonObject {
-                put(year.toString(), buildJsonArray {
-                    topSongs.forEach { (name, artists, duration) ->
-                        add(buildJsonObject {
-                            put("name", name)
-                            put("artists", artists)
-                            put("duration", duration)
-                        })
-                    }
-                })
+                val yearData = buildJsonObject {
+                    put(year.toString(), buildJsonArray {
+                        topSongs.forEach { (name, artists, duration) ->
+                            add(buildJsonObject {
+                                put("name", name)
+                                put("artists", artists)
+                                put("duration", duration)
+                            })
+                        }
+                    })
+                }
+
+                val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+                val fileName = "top_songs_${year}_$timestamp.json"
+                sendDataToServer(yearData.toString(), fileName)
+            }catch(e: Exception){
+                println("Error sending the data for year: $year")
             }
 
-            val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-            val fileName = "top_songs_${year}_$timestamp.json"
-            sendDataToServer(yearData.toString(), fileName)
-        }catch(e: Exception){
-            println("Error sending the data for year: $year")
-        }
-
-        if (year < 2023) {
-            println("Waiting 5 seconds before fetching next year's data...")
-            delay(5000) // Wait for 5 seconds
+            if (year < 2023) {
+                println("Waiting 5 seconds before fetching next year's data...")
+                delay(5000) // Wait for 5 seconds
+            }
         }
     }
 }
