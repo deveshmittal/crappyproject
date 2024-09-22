@@ -18,6 +18,8 @@ val SPOTIFY_CLIENT_SECRET = System.getenv("SPOTIFY_CLIENT_SECRET") ?: "4f31ca5f0
 
 val client = OkHttpClient()
 
+var i = 1
+
 suspend fun getSpotifyAccessToken(): String = withContext(Dispatchers.IO) {
     val credentials = "$SPOTIFY_CLIENT_ID:$SPOTIFY_CLIENT_SECRET"
     val encodedCredentials = Base64.getEncoder().encodeToString(credentials.toByteArray())
@@ -54,7 +56,7 @@ suspend fun searchSpotifyPlaylists(accessToken: String, year: Int): String = wit
 
 suspend fun fetchPlaylistTracks(accessToken: String, playlistId: String): String = withContext(Dispatchers.IO) {
     val request = Request.Builder()
-        .url("https://api.spotify.com/v1/playlists/$playlistId/tracks?limit=10")
+        .url("https://api.spotify.com/v1/playlists/$playlistId/tracks?limit=100")
         .header("Authorization", "Bearer $accessToken")
         .build()
 
@@ -73,8 +75,10 @@ suspend fun getTopSongsForYear(accessToken: String, year: Int): List<Triple<Stri
 
     val tracksResult = fetchPlaylistTracks(accessToken, playlistId)
     val tracksJson = Json.parseToJsonElement(tracksResult).jsonObject
-    return tracksJson["items"]?.jsonArray?.take(20)?.mapNotNull { item ->
-        println("Devesh $item")
+    val localFile = File("songs${i++}.json")
+    localFile.writeText(tracksJson.toString())
+    //println("Devesh $tracksJson")
+    return tracksJson["items"]?.jsonArray?.mapNotNull { item ->
         val track = item.jsonObject["track"]?.jsonObject
         val name = track?.get("name")?.jsonPrimitive?.content
         val duration = track?.get("duration_ms")?.jsonPrimitive?.content
