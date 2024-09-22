@@ -40,6 +40,22 @@ suspend fun getSpotifyAccessToken(): String = withContext(Dispatchers.IO) {
     }.getOrElse { throw it }
 }
 
+suspend fun getGenresForArtists(accessToken: String, artistIds: List<String>): List<String> = withContext(Dispatchers.IO) {
+    val artistIdsParam = artistIds.take(50).joinToString(",")
+    val request = Request.Builder()
+        .url("https://api.spotify.com/v1/artists?ids=$artistIdsParam")
+        .header("Authorization", "Bearer $accessToken")
+        .build()
+
+    kotlin.runCatching {
+        val response = client.newCall(request).execute()
+        val responseBody = response.body?.string() ?: throw IllegalStateException("Failed to fetch artist data")
+        val json = Json.parseToJsonElement(responseBody).jsonObject
+        json["artists"]?.jsonArray?.flatMap { it.jsonObject["genres"]?.jsonArray?.map { genre -> genre.jsonPrimitive.content } ?: emptyList() }
+            ?: emptyList()
+    }.getOrElse { throw it }
+}
+
 suspend fun searchSpotifyPlaylists(accessToken: String, year: Int): String = withContext(Dispatchers.IO) {
     val request = Request.Builder()
         .url("https://api.spotify.com/v1/search?q=year:$year&type=playlist&limit=1")
@@ -54,7 +70,7 @@ suspend fun searchSpotifyPlaylists(accessToken: String, year: Int): String = wit
 
 suspend fun fetchPlaylistTracks(accessToken: String, playlistId: String): String = withContext(Dispatchers.IO) {
     val request = Request.Builder()
-        .url("https://api.spotify.com/v1/playlists/$playlistId/tracks?limit=10")
+        .url("https://api.spotify.com/v1/playlists/$playlistId/tracks?limit=100")
         .header("Authorization", "Bearer $accessToken")
         .build()
 
@@ -64,7 +80,7 @@ suspend fun fetchPlaylistTracks(accessToken: String, playlistId: String): String
     }.getOrElse { throw it }
 }
 
-suspend fun getTopSongsForYear(accessToken: String, year: Int): List<Triple<String, String, String>> {
+suspend fun getTopSongsForYear(accessToken: String, year: Int): List<MusicMetadata> {
     println("Fetching data for year $year")
     val searchResult = searchSpotifyPlaylists(accessToken, year)
     val searchJson = Json.parseToJsonElement(searchResult).jsonObject
@@ -73,51 +89,54 @@ suspend fun getTopSongsForYear(accessToken: String, year: Int): List<Triple<Stri
 
     val tracksResult = fetchPlaylistTracks(accessToken, playlistId)
     val tracksJson = Json.parseToJsonElement(tracksResult).jsonObject
-    return tracksJson["items"]?.jsonArray?.take(20)?.mapNotNull { item ->
-        println("Devesh $item")
+
+    return tracksJson["items"]?.jsonArray?.mapNotNull { item ->
         val track = item.jsonObject["track"]?.jsonObject
         val name = track?.get("name")?.jsonPrimitive?.content
         val duration = track?.get("duration_ms")?.jsonPrimitive?.content
         val artists = track?.get("artists")?.jsonArray?.mapNotNull { it.jsonObject["name"]?.jsonPrimitive?.content }
-        if (name != null && artists != null && duration != null) {
-            Triple(name,  artists.joinToString(", "), duration)
+        val artistId = track?.get("artists")?.jsonArray?.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content
+
+        if (name != null && artists != null && duration != null && artistId != null) {
+            val genres = getGenresForArtists(accessToken, listOf(artistId))
+            MusicMetadata(name, artists.joinToString(", "), duration, genres.joinToString(", "))
         } else null
     } ?: emptyList()
 }
 
 suspend fun getAllYearsTopSongs() {
     val accessToken = getSpotifyAccessToken()
-    val allYearsData = mutableMapOf<Int, List<Triple<String, String, String>>>()
+    val allYearsData = mutableMapOf<Int, List<MusicMetadata>>()
 
-    while (true){
-        for (year in 2014 downTo 1961) {
-            try {
-                val topSongs = getTopSongsForYear(accessToken, year)
-                allYearsData[year] = topSongs
+    for (year in 2013 downTo 1961) {
+        try {
+            val topSongs = getTopSongsForYear(accessToken, year)
+            allYearsData[year] = topSongs
 
-                val yearData = buildJsonObject {
-                    put(year.toString(), buildJsonArray {
-                        topSongs.forEach { (name, artists, duration) ->
-                            add(buildJsonObject {
-                                put("name", name)
-                                put("artists", artists)
-                                put("duration", duration)
-                            })
-                        }
-                    })
-                }
-
-                val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-                val fileName = "top_songs_${year}_$timestamp.json"
-                sendDataToServer(yearData.toString(), fileName)
-            }catch(e: Exception){
-                println("Error sending the data for year: $year")
+            val yearData = buildJsonObject {
+                put(year.toString(), buildJsonArray {
+                    topSongs.forEach { (name, artists, duration, genre) ->
+                        add(buildJsonObject {
+                            put("name", name)
+                            put("artists", artists)
+                            put("duration", duration)
+                            put("genre", genre)
+                        })
+                    }
+                })
             }
 
-            if (year < 2023) {
-                println("Waiting 5 seconds before fetching next year's data...")
-                delay(5000) // Wait for 5 seconds
-            }
+            val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+            val fileName = "top_songs_${year}_$timestamp.json"
+            sendDataToServer(yearData.toString(), fileName)
+        } catch(e: Exception) {
+            println("Error sending the data for year: $year")
+            e.printStackTrace()
+        }
+
+        if (year > 1961) {
+            println("Waiting 5 seconds before fetching next year's data...")
+            delay(1500) // Wait for 5 seconds
         }
     }
 }
@@ -155,6 +174,13 @@ suspend fun sendDataToServer(data: String, fileName: String) = withContext(Dispa
         throw it
     }
 }
+
+data class MusicMetadata(
+    val name: String,
+    val artists: String,
+    val duration: String,
+    val genre: String
+)
 
 fun main() {
     runBlocking {
