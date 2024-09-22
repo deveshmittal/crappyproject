@@ -9,9 +9,21 @@ import kotlinx.serialization.json.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import java.time.Duration
 import java.util.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+
+data class Song(
+    val name: String,
+    val artists: String,
+    val duration: String,
+    val album: String,
+    val releaseDate: String,   // Added field for release date
+    val previewUrl: String?,   // Added field for preview URL
+    val popularity: Int,       // Added field for popularity
+    val explicit: Boolean      // Added field for explicit content
+)
 
 val SPOTIFY_CLIENT_ID = System.getenv("SPOTIFY_CLIENT_ID") ?: "67acaa8156c34bd887b0d08fd7a09fc5"
 val SPOTIFY_CLIENT_SECRET = System.getenv("SPOTIFY_CLIENT_SECRET") ?: "4f31ca5f0d4b4a1bb9f5e5a4f2561191"
@@ -66,7 +78,7 @@ suspend fun fetchPlaylistTracks(accessToken: String, playlistId: String): String
     }.getOrElse { throw it }
 }
 
-suspend fun getTopSongsForYear(accessToken: String, year: Int): List<Triple<String, String, String>> {
+suspend fun getTopSongsForYear(accessToken: String, year: Int): List<Song> {
     println("Fetching data for year $year")
     val searchResult = searchSpotifyPlaylists(accessToken, year)
     val searchJson = Json.parseToJsonElement(searchResult).jsonObject
@@ -75,53 +87,78 @@ suspend fun getTopSongsForYear(accessToken: String, year: Int): List<Triple<Stri
 
     val tracksResult = fetchPlaylistTracks(accessToken, playlistId)
     val tracksJson = Json.parseToJsonElement(tracksResult).jsonObject
-    val localFile = File("songs${i++}.json")
-    localFile.writeText(tracksJson.toString())
-    //println("Devesh $tracksJson")
+
     return tracksJson["items"]?.jsonArray?.mapNotNull { item ->
         val track = item.jsonObject["track"]?.jsonObject
         val name = track?.get("name")?.jsonPrimitive?.content
         val duration = track?.get("duration_ms")?.jsonPrimitive?.content
+        val album = track?.get("album")?.jsonObject?.get("name")?.jsonPrimitive?.content ?: ""
+        val releaseDate = track?.get("album")?.jsonObject?.get("release_date")?.jsonPrimitive?.content ?: ""
         val artists = track?.get("artists")?.jsonArray?.mapNotNull { it.jsonObject["name"]?.jsonPrimitive?.content }
+        val previewUrl = track?.get("preview_url")?.jsonPrimitive?.content
+        val popularity = track?.get("popularity")?.jsonPrimitive?.int ?: 0
+        val explicit = track?.get("explicit")?.jsonPrimitive?.boolean ?: false
+
         if (name != null && artists != null && duration != null) {
-            Triple(name,  artists.joinToString(", "), duration)
+            Song(
+                name,
+                artists.joinToString(", "),
+                duration,
+                album,
+                releaseDate,
+                previewUrl,
+                popularity,
+                explicit
+            )
         } else null
     } ?: emptyList()
 }
 
+suspend fun sendInBatches(songs: List<Song>, year: Int) {
+    val batchSize = 10
+    val batches = songs.chunked(batchSize)
+
+    for ((index, batch) in batches.withIndex()) {
+        val batchData = buildJsonArray {
+            batch.forEach { (name, artists, duration, album, releaseDate, previewUrl, popularity, explicit) ->
+                add(buildJsonObject {
+                    put("name", name)
+                    put("artists", artists)
+                    put("duration", duration)
+                    put("album", album)
+                    put("releaseDate", releaseDate)
+                    put("previewUrl", previewUrl ?: "N/A")
+                    put("popularity", popularity)
+                    put("explicit", explicit)
+                })
+            }
+        }
+
+        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+        val fileName = "top_songs_${year}_batch_${index}_$timestamp.json"
+        sendDataToServer(batchData.toString(), fileName)
+
+        println("Wait 500 milliseconds before sending the next batch..")
+        // Wait 500 milliseconds before sending the next batch
+        delay(500)
+    }
+}
+
 suspend fun getAllYearsTopSongs() {
     val accessToken = getSpotifyAccessToken()
-    val allYearsData = mutableMapOf<Int, List<Triple<String, String, String>>>()
 
-    while (true){
-        for (year in 2014 downTo 1961) {
-            try {
-                val topSongs = getTopSongsForYear(accessToken, year)
-                allYearsData[year] = topSongs
+    for (year in 2014 downTo 1961) {
+        try {
+            val topSongs = getTopSongsForYear(accessToken, year)
+            println("Sending data for year $year in batches...")
+            sendInBatches(topSongs, year)
+        } catch (e: Exception) {
+            println("Error processing the data for year: $year")
+        }
 
-                val yearData = buildJsonObject {
-                    put(year.toString(), buildJsonArray {
-                        topSongs.forEach { (name, artists, duration) ->
-                            add(buildJsonObject {
-                                put("name", name)
-                                put("artists", artists)
-                                put("duration", duration)
-                            })
-                        }
-                    })
-                }
-
-                val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-                val fileName = "top_songs_${year}_$timestamp.json"
-                sendDataToServer(yearData.toString(), fileName)
-            }catch(e: Exception){
-                println("Error sending the data for year: $year")
-            }
-
-            if (year < 2023) {
-                println("Waiting 5 seconds before fetching next year's data...")
-                delay(5000) // Wait for 5 seconds
-            }
+        if (year < 2023) {
+            println("Waiting 5 seconds before fetching next year's data...")
+            delay(5000) // Wait for 5 seconds
         }
     }
 }
