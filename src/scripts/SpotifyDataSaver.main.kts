@@ -146,19 +146,21 @@ suspend fun sendInBatches(songs: List<Song>, year: Int) {
 
 suspend fun getAllYearsTopSongs() {
     val accessToken = getSpotifyAccessToken()
+    while (true) {
+        for (year in 2014 downTo 1961) {
+            try {
+                val topSongs = getTopSongsForYear(accessToken, year)
+                println("Sending data for year $year in batches...")
+                sendInBatches(topSongs, year)
+            } catch (e: Exception) {
+                println(e.message)
+                println("Error processing the data for year: $year")
+            }
 
-    for (year in 2014 downTo 1961) {
-        try {
-            val topSongs = getTopSongsForYear(accessToken, year)
-            println("Sending data for year $year in batches...")
-            sendInBatches(topSongs, year)
-        } catch (e: Exception) {
-            println("Error processing the data for year: $year")
-        }
-
-        if (year < 2023) {
-            println("Waiting 5 seconds before fetching next year's data...")
-            delay(5000) // Wait for 5 seconds
+            if (year < 2023) {
+                println("Waiting 5 seconds before fetching next year's data...")
+                delay(5000) // Wait for 5 seconds
+            }
         }
     }
 }
