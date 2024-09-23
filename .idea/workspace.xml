@@ -5,13 +5,45 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="36a5d434-d88b-42f6-9fd5-e3b7b232f0fb" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2010_batch_0_20240923_144344.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2011_batch_0_20240923_144328.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2012_batch_0_20240923_144312.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2014_batch_0_20240923_144251.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/KafkaPublisher.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_1998_batch_0_20240923_145831.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_1999_batch_0_20240923_145815.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2000_batch_0_20240923_145759.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2001_batch_0_20240923_145743.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2002_batch_0_20240923_145727.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2003_batch_0_20240923_145712.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2004_batch_0_20240923_145656.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2005_batch_0_20240923_145640.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2007_batch_0_20240923_145618.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2008_batch_0_20240923_145602.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2009_batch_0_20240923_145546.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2010_batch_0_20240923_145531.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2011_batch_0_20240923_145515.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2012_batch_0_20240923_145459.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scripts/top_songs_2014_batch_0_20240923_145437.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_1990_20240923_151945.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_1991_20240923_151924.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_1992_20240923_151855.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_1993_20240923_151837.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_1994_20240923_151810.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_1995_20240923_151744.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_1996_20240923_151723.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_1997_20240923_151703.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_1998_20240923_151648.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_1999_20240923_151621.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2000_20240923_151555.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2001_20240923_151526.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2002_20240923_151449.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2003_20240923_151415.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2005_20240923_151341.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2007_20240923_151305.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2008_20240923_151238.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2009_20240923_151217.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2010_20240923_151147.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2011_20240923_151120.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/top_songs_2012_20240923_151054.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/Main.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/Main.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,6 +95,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Kotlin Script" />
+        <option value="Kotlin Class" />
       </list>
     </option>
   </component>
@@ -98,6 +131,7 @@
     "Kotlin script (Beta).SpotifyDataSavermain.kts.executor": "Run",
     "Kotlin script (Beta).TopHitsYearly.main.kts.executor": "Run",
     "Kotlin script (Beta).build.gradle.kts.executor": "Run",
+    "Kotlin.KafkaPublisherKt.executor": "Run",
     "Kotlin.MainKt.executor": "Run",
     "Kotlin.SpotifyDataSaverKt.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
@@ -122,7 +156,14 @@
       <recent name="$PROJECT_DIR$/src/scripts" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Kotlin.KafkaPublisherKt">
+    <configuration name="KafkaPublisherKt" type="JetRunConfigurationType" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="org.deveshm.KafkaPublisherKt" />
+      <module name="SpotMusic.main" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="SpotifyDataSaver.main.kts" type="KotlinStandaloneScriptRunConfigurationType" temporary="true" nameIsGenerated="true">
       <module name="SpotMusic" />
       <option name="PROGRAM_PARAMETERS" value="-verbose" />
@@ -134,6 +175,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Kotlin.KafkaPublisherKt" />
         <item itemvalue="Kotlin script (Beta).SpotifyDataSaver.main.kts" />
       </list>
     </recent_temporary>
@@ -150,7 +192,7 @@
       <workItem from="1726854093324" duration="3824000" />
       <workItem from="1726859561937" duration="3486000" />
       <workItem from="1726977354995" duration="13253000" />
-      <workItem from="1727120533792" duration="659000" />
+      <workItem from="1727120533792" duration="2181000" />
     </task>
     <servers />
   </component>

@@ -26,6 +26,8 @@ dependencies {
 
     // Adding Kotlin Serialization for JSON parsing
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    implementation("org.apache.kafka:kafka-clients:3.3.1")
 }
 
 tasks.test {
